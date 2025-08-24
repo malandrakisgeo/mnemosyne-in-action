@@ -19,4 +19,7 @@ public interface TransactionRepo extends JpaRepository<Transaction, UUID> {
     List<Transaction> getTransactionBySellerid(String sellerid);
 
     List<Transaction> getTransactionByCompleted(boolean completed);
+
+    List<Transaction> getTransactionBySellerAndCompleted(String sellerid, boolean completed);
+
 }

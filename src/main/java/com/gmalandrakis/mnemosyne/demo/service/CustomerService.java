@@ -9,15 +9,17 @@ import org.hibernate.annotations.Proxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
-@Proxy(lazy = false)
+//@Service
+//@Proxy(lazy = false)
 public class CustomerService {
     private final CustomerRepo repository;
 
     //  private final RedisTemplate<String, String> redisTemplate;
+
 
     @Autowired
     public CustomerService(CustomerRepo repository) {

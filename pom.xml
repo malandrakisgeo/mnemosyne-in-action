@@ -57,7 +57,7 @@
 		<dependency>
 			<groupId>com.gmalandrakis</groupId>
 			<artifactId>mnemosyne</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>0.0.3beta</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.aspectj/aspectjweaver -->
 		<dependency>

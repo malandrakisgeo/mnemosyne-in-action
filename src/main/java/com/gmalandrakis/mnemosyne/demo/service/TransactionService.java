@@ -6,7 +6,6 @@ import com.gmalandrakis.mnemosyne.annotations.UpdatesCache;
 import com.gmalandrakis.mnemosyne.annotations.UpdatesCache.AddMode;
 import com.gmalandrakis.mnemosyne.annotations.UpdatesCache.RemoveMode;
 
-import com.gmalandrakis.mnemosyne.demo.customcache.FIFOCache;
 import com.gmalandrakis.mnemosyne.demo.model.Transaction;
 import com.gmalandrakis.mnemosyne.demo.repository.TransactionRepo;
 import org.hibernate.annotations.Proxy;
@@ -31,20 +30,18 @@ public class TransactionService {
     @Cached(cacheName = "transactionsBySellers", allowSeparateHandlingForKeyCollections = false)
     public List<Transaction> getTransactionsBySellers(Set<String> username) {
         System.out.println("Cache miss for Ssellers!");
-        // var a = repository.getTransactionBySellerid(username.get(0));
-        // a.size();
         var ret = username.stream().map(repository::getTransactionBySellerid).flatMap(List::stream).toList();
         return ret;
     }
 
-    @Cached(cacheName = "transactionsBySeller", cacheType = FIFOCache.class)
+    @Cached(cacheName = "transactionsBySeller")
     public List<Transaction> getTransactionsBySeller(String username) {
         System.out.println("Cache miss for seller!");
         var ret = repository.getTransactionBySellerid(username);
         return ret;
     }
 
-    @Cached(cacheName = "transactionsById", cacheType = FIFOCache.class, capacity = 3)
+    @Cached(cacheName = "transactionsById", capacity = 3)
     public Transaction getById(UUID id) {
         System.out.println("Cache miss!");
 
@@ -52,7 +49,7 @@ public class TransactionService {
         return ret;
     }
 
-    @Cached(cacheName = "getPendingTransactions", cacheType = FIFOCache.class)
+    @Cached(cacheName = "getPendingTransactions")
     public List<Transaction> getPendingTransactions() {
         System.out.println("Cache miss!");
 
@@ -63,6 +60,13 @@ public class TransactionService {
     public List<Transaction> getTransactionByIds(Set<UUID> transactionIds) {
         System.out.println("Cache miss!");
         return transactionIds.stream().map(repository::getById).toList();
+    }
+
+    @Cached(cacheName = "completedTransactionCache", capacity = 1000)
+    public List<Transaction> getTransactionsBySellerAndCompletion(String sellerId, boolean completed){
+        System.out.println("Cache miss!");
+
+        return repository.getTransactionBySellerAndCompleted(sellerId, false);
     }
 
     //@UpdatesCache(name = "getPendingTransactionsBySeller", removeMode = RemoveMode.INVALIDATE_CACHE) //TODO: Test with condition
@@ -93,15 +97,15 @@ public class TransactionService {
 
      */
     //@UpdatesCache(name = "getPendingTransactionsBySeller", conditionalAdd = "!completed", targetObjectKeys = "sellerid", addMode = AddMode.ADD_VALUES_TO_COLLECTION)
-    @UpdatesCache(name = "getPendingTransactions", addOnCondition = "!completed", addMode = AddMode.ADD_VALUES_TO_COLLECTION)
+    @UpdatesCache(name = "getPendingTransactions", addOnCondition = "!completed", addMode = AddMode.ADD_VALUES_TO_COLLECTION, removeOnCondition = "completed", removeMode = RemoveMode.REMOVE_VALUE_FROM_COLLECTION)
     @UpdatesCache(name = "transactionsBySeller", targetObjectKeys = "sellerid", addMode = AddMode.ADD_VALUES_TO_COLLECTION)
-    @UpdatesCache(name = "transactionsById", targetObjectKeys = "id", removeMode = RemoveMode.NONE, addMode = AddMode.DEFAULT)
+    @UpdatesCache(name = "transactionsById", targetObjectKeys = "id", addMode = AddMode.DEFAULT)
     @UpdatesCache(name = "transactionByIds", targetObjectKeys = "id", addMode = AddMode.DEFAULT) //works
-    public void addTransaction(@UpdatedValue Transaction transaction) {
+    public void saveTransaction(@UpdatedValue Transaction transaction) {
         this.repository.save(transaction);
     }
 
-    @UpdatesCache(name = "getPendingTransactions", removeOnCondition = "!completed", removeMode = RemoveMode.REMOVE_VALUE_FROM_COLLECTION)
+    @UpdatesCache(name = "getPendingTransactions", removeMode = RemoveMode.REMOVE_VALUE_FROM_COLLECTION) //TODO: REMOVE_VALUE_FROM_ALL_COLLECTIONS should also do the trick here.
     @UpdatesCache(name = "transactionsBySeller", targetObjectKeys = "sellerid", removeMode = RemoveMode.REMOVE_VALUE_FROM_COLLECTION)
     @UpdatesCache(name = "transactionByIds", targetObjectKeys = "id", removeMode = RemoveMode.REMOVE_VALUE_FROM_COLLECTION)
     @UpdatesCache(name = "transactionsById", targetObjectKeys = "id", removeMode = RemoveMode.DEFAULT, addMode = AddMode.NONE)

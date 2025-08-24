@@ -1,9 +1,7 @@
 package com.gmalandrakis.mnemosyne.demo.controller;
 
 
-import com.gmalandrakis.mnemosyne.demo.model.Customer;
 import com.gmalandrakis.mnemosyne.demo.model.Transaction;
-import com.gmalandrakis.mnemosyne.demo.service.CustomerService;
 import com.gmalandrakis.mnemosyne.demo.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,17 +9,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Controller
 public class DemoController {
 
-    private final CustomerService customerService;
     private final TransactionService transactionService;
 
     @Autowired
-    public DemoController(CustomerService customerService, TransactionService transactionService) {
-        this.customerService = customerService;
+    public DemoController( TransactionService transactionService) {
         this.transactionService = transactionService;
     }
 
@@ -30,9 +25,9 @@ public class DemoController {
         return ResponseEntity.ok(transactionService.getTransactionByIds(new HashSet<>(id)));
     }
 
-    @PostMapping(path = "createTransaction", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<Void> createTransaction(@RequestBody Transaction transaction) {
-        transactionService.addTransaction(transaction);
+    @PostMapping(path = "saveTransaction", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<Void> saveTransaction(@RequestBody Transaction transaction) {
+        transactionService.saveTransaction(transaction);
         return ResponseEntity.ok().build();
     }
 
