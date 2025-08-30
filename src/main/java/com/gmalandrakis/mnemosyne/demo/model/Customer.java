@@ -21,6 +21,8 @@ public class Customer {
     private String name;
     private String surname;
     private String email;
+    private boolean isActive;
+    private boolean isVerified;
 
     @Override
     public String toString() {

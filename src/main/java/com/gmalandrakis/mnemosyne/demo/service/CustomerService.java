@@ -26,7 +26,9 @@ public class CustomerService {
         this.repository = repository;
         //  this.redisTemplate = redisTemplate;
     }
-
+    @UpdatesCache(name="getActiveUsers", addOnCondition={"isActive", "isVerified"}, conditionalANDGate = false, complementaryCondition = true)
+    public void saveActiveUserDetails(@UpdatedValue Customer newUser){ //TODO: Test conditionalANDGate and complementaryCondition
+    }
     //@/UpdatesCache(name = "multiCustomerCacheSeparate", removeMode = RemoveMode.REMOVE_VALUE_FROM_ALL_COLLECTIONS)
     //@UpdatesCache(name = "customerCache", targetObjectKeys = "id", removeMode = RemoveMode.REMOVE_KEY)
    // @Cached(cacheName="moofes")

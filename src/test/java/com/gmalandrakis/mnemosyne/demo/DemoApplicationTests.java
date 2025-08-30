@@ -158,17 +158,24 @@ public class DemoApplicationTests {
         verify(repository, times(1)).getById(any());
         assertTrue(result.size() == 3);
 
+        var tran4 = getPendingTransaction();
+        transactionServiceTest.saveTransaction(tran4);
+
+        transactionServiceTest.deleteTransaction(tran3);
+        result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran3.getId()));
+        verify(repository, times(2)).getById(any());
+        assertTrue(result.size() == 2);
+        result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran4.getId()));
+        verify(repository, times(2)).getById(any());
+        assertTrue(result.size() == 3);
         /*  TODO
-            Add a transaction D.
-            Delete the transaction C.
-            Verify that the sets ABC, ABD return what they were supposed to with only one db call.
             Verify that the other caches were updated
          */
 
     }
 
     /*
-    UpdatesValuePool
+
     TODO: test UpdatesValuePool
     test compound key getTransactionsBySellerAndCompletion
      */
