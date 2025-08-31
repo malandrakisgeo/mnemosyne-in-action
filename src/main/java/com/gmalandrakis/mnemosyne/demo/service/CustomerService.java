@@ -11,10 +11,11 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-//@Service
-//@Proxy(lazy = false)
+@Service
+@Proxy(lazy = false)
 public class CustomerService {
     private final CustomerRepo repository;
 
@@ -26,12 +27,17 @@ public class CustomerService {
         this.repository = repository;
         //  this.redisTemplate = redisTemplate;
     }
-    @UpdatesCache(name="getActiveUsers", addOnCondition={"isActive", "isVerified"}, conditionalANDGate = false, complementaryCondition = true)
-    public void saveActiveUserDetails(@UpdatedValue Customer newUser){ //TODO: Test conditionalANDGate and complementaryCondition
+
+    @UpdatesCache(name = "customerCache", targetObjectKeys = "id", addMode = UpdatesCache.AddMode.DEFAULT)
+    @UpdatesCache(name = "getActiveUsers", addOnCondition = {"isActive", "isVerified"},
+            conditionalANDGate = true, complementaryCondition = true, addMode = UpdatesCache.AddMode.ADD_VALUES_TO_COLLECTION)
+    public void saveActiveUserDetails(@UpdatedValue Customer newUser) { //TODO: Test conditionalANDGate and complementaryCondition
+        repository.save(newUser);
     }
+
     //@/UpdatesCache(name = "multiCustomerCacheSeparate", removeMode = RemoveMode.REMOVE_VALUE_FROM_ALL_COLLECTIONS)
     //@UpdatesCache(name = "customerCache", targetObjectKeys = "id", removeMode = RemoveMode.REMOVE_KEY)
-   // @Cached(cacheName="moofes")
+    // @Cached(cacheName="moofes")
     public void deleteMe(@UpdatedValue Customer id, @UpdateKey(keyId = "KEY") List<Integer> ids) {
 //bug 1: not recognized without @Cached (FIXED)
         //bug2: after deleting, it does not re-add for some reason!
@@ -52,7 +58,7 @@ public class CustomerService {
 
 
     @Cached(cacheName = "multiCustomerCacheSeparate", capacity = 500, timeToLive = 3000 * 1000, countdownFromCreation = true, allowSeparateHandlingForKeyCollections = true)
-   // @UpdatesCache(name = "multiCustomerCache", annotatedKeys = "ids")
+    // @UpdatesCache(name = "multiCustomerCache", annotatedKeys = "ids")
     public List<Customer> getCustomerByIdTestSpecial(@UpdateKey(keyId = "ids") List<Integer> ids) {
         System.out.println("called by a thread");
         var list = new ArrayList<Customer>();
@@ -72,17 +78,12 @@ public class CustomerService {
         if (c != null) {
             return c;
         }
-        return new Customer();
+        return null;
     }
 
-    public List<Customer> getCustomerByIdRowToUncached(Integer maxId) {
-        // int r = Integer.parseInt(maxId);
-        var lst = new ArrayList<Customer>();
-        for (int i = 1; i <= maxId; i++) {
-            lst.add(repository.getById(String.valueOf(i)));
-        }
-
-        return lst;
+    @Cached(cacheName = "getActiveUsers", capacity = 5, timeToLive = 3000 * 1000, countdownFromCreation = true)
+    public List<Customer> getActiveUsers() {
+        return Collections.emptyList();
     }
 
 

@@ -1,7 +1,9 @@
 package com.gmalandrakis.mnemosyne.demo;
 
 import com.gmalandrakis.mnemosyne.demo.model.Transaction;
+import com.gmalandrakis.mnemosyne.demo.repository.CustomerRepo;
 import com.gmalandrakis.mnemosyne.demo.repository.TransactionRepo;
+import com.gmalandrakis.mnemosyne.demo.service.CustomerService;
 import com.gmalandrakis.mnemosyne.demo.service.TransactionService;
 import com.gmalandrakis.mnemosyne.spring.MnemosyneSpringConf;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +31,7 @@ import static org.springframework.test.annotation.DirtiesContext.ClassMode.BEFOR
 @EnableAutoConfiguration
 @ComponentScan("com.gmalandrakis")
 @DirtiesContext(classMode = BEFORE_EACH_TEST_METHOD)
-public class DemoApplicationTests {
+public class TransactionTests {
     private static String DEFAULT_SELLER = "John";
     private static String DEFAULT_BUYER = "George";
 
@@ -48,6 +50,10 @@ public class DemoApplicationTests {
     @Autowired
     TransactionService transactionServiceTest;
 
+    @MockBean
+    CustomerRepo repositoryy;
+    @Autowired
+    CustomerService customerService;
 
     List<Transaction> availableTransactions;
 
@@ -168,9 +174,13 @@ public class DemoApplicationTests {
         result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran4.getId()));
         verify(repository, times(2)).getById(any());
         assertTrue(result.size() == 3);
-        /*  TODO
-            Verify that the other caches were updated
-         */
+
+        assertTrue(transactionServiceTest.getById(tran3.getId()) == null);
+
+    }
+
+    @Test
+    void compountKeyTest(){
 
     }
 

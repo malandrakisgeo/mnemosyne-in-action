@@ -2,6 +2,7 @@ package com.gmalandrakis.mnemosyne.demo.controller;
 
 
 import com.gmalandrakis.mnemosyne.demo.model.Transaction;
+import com.gmalandrakis.mnemosyne.demo.service.CustomerService;
 import com.gmalandrakis.mnemosyne.demo.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +15,12 @@ import java.util.*;
 public class DemoController {
 
     private final TransactionService transactionService;
+    private final CustomerService customerService;
 
     @Autowired
-    public DemoController( TransactionService transactionService) {
+    public DemoController(TransactionService transactionService, CustomerService customerService) {
         this.transactionService = transactionService;
+        this.customerService = customerService;
     }
 
     @PostMapping(path = "getTransactions", consumes = "application/json", produces = "application/json")
