@@ -1,10 +1,11 @@
 package com.gmalandrakis.mnemosyne.demo.service;
 
 import com.gmalandrakis.mnemosyne.annotations.*;
-import com.gmalandrakis.mnemosyne.annotations.UpdatesCache.RemoveMode;
 
 import com.gmalandrakis.mnemosyne.demo.model.Customer;
 import com.gmalandrakis.mnemosyne.demo.repository.CustomerRepo;
+import com.gmalandrakis.mnemosyne.structures.AddMode;
+import com.gmalandrakis.mnemosyne.structures.RemoveMode;
 import org.hibernate.annotations.Proxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,9 +29,9 @@ public class CustomerService {
         //  this.redisTemplate = redisTemplate;
     }
 
-    @UpdatesCache(name = "customerCache", targetObjectKeys = "id", addMode = UpdatesCache.AddMode.DEFAULT)
+    @UpdatesCache(name = "customerCache", targetObjectKeys = "id")
     @UpdatesCache(name = "getActiveUsers", addOnCondition = {"isActive", "isVerified"},
-            conditionalANDGate = true, complementaryCondition = true, addMode = UpdatesCache.AddMode.ADD_VALUES_TO_COLLECTION)
+            conditionalANDGate = true, complementaryCondition = true)
     public void saveActiveUserDetails(@UpdatedValue Customer newUser) { //TODO: Test conditionalANDGate and complementaryCondition
         repository.save(newUser);
     }
@@ -44,7 +45,7 @@ public class CustomerService {
     }
 
 
-    @Cached(cacheName = "multiCustomerCache", capacity = 500, timeToLive = 150 * 1000, countdownFromCreation = true)
+    @Cached(cacheName = "multiCustomerCache", capacity = 500, timeToLive = 150 * 1000, countdownFromCreation = true, addMode = AddMode.SINGLE_VALUE, removeMode = RemoveMode.SINGLE_VALUE)
     public List<Customer> getCustomerByIdTest(@Key List<Integer> ids, String ignore) {
         System.out.println("method called");
 
@@ -57,7 +58,7 @@ public class CustomerService {
     }
 
 
-    @Cached(cacheName = "multiCustomerCacheSeparate", capacity = 500, timeToLive = 3000 * 1000, countdownFromCreation = true, allowSeparateHandlingForKeyCollections = true)
+    @Cached(cacheName = "multiCustomerCacheSeparate", capacity = 500, timeToLive = 3000 * 1000, countdownFromCreation = true, allowSeparateHandlingForKeyCollections = true, addMode = AddMode.SINGLE_VALUE, removeMode = RemoveMode.SINGLE_VALUE)
     // @UpdatesCache(name = "multiCustomerCache", annotatedKeys = "ids")
     public List<Customer> getCustomerByIdTestSpecial(@UpdateKey(keyId = "ids") List<Integer> ids) {
         System.out.println("called by a thread");
@@ -70,7 +71,7 @@ public class CustomerService {
     }
 
 
-    @Cached(cacheName = "customerCache", capacity = 500, timeToLive = 3000 * 1000, countdownFromCreation = true)
+    @Cached(cacheName = "customerCache", capacity = 500, timeToLive = 3000 * 1000, countdownFromCreation = true, addMode = AddMode.SINGLE_VALUE, removeMode = RemoveMode.SINGLE_VALUE)
     public Customer getCustomerByIdTest(String id) {
         System.out.println("method called");
 
@@ -81,13 +82,13 @@ public class CustomerService {
         return null;
     }
 
-    @Cached(cacheName = "getActiveUsers", capacity = 5, timeToLive = 3000 * 1000, countdownFromCreation = true)
+    @Cached(cacheName = "getActiveUsers", capacity = 5, timeToLive = 3000 * 1000, countdownFromCreation = true, addMode = AddMode.ADD_TO_COLLECTION, removeMode = RemoveMode.REMOVE_FROM_COLLECTION)
     public List<Customer> getActiveUsers() {
         return Collections.emptyList();
     }
 
 
-    @Cached(cacheName = "customersCache", capacity = 500, timeToLive = 3000 * 1000, countdownFromCreation = true)
+    @Cached(cacheName = "customersCache", capacity = 500, timeToLive = 3000 * 1000, countdownFromCreation = true, addMode = AddMode.SINGLE_VALUE, removeMode = RemoveMode.SINGLE_VALUE)
     public List<Customer> getCustomerByIdRowTo(Integer maxId) {
         System.out.println("method called");
 

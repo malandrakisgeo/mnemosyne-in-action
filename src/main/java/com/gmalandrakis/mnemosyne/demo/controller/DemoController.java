@@ -48,7 +48,8 @@ public class DemoController {
 
     @PostMapping(path = "getBySellers", produces = "application/json")
     public ResponseEntity<List<Transaction>> getBySellers(@RequestBody List<String> users) {
-        return ResponseEntity.ok(transactionService.getTransactionsBySellers(new HashSet<>(users)));
+        //return ResponseEntity.ok(transactionService.getTransactionsBySellers(new HashSet<>(users)));
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping(path = "getBySeller/{sellerId}", produces = "application/json")

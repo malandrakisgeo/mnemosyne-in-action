@@ -1,5 +1,6 @@
 package com.gmalandrakis.mnemosyne.demo;
 
+import com.gmalandrakis.mnemosyne.core.MnemoService;
 import com.gmalandrakis.mnemosyne.demo.model.Transaction;
 import com.gmalandrakis.mnemosyne.demo.repository.CustomerRepo;
 import com.gmalandrakis.mnemosyne.demo.repository.TransactionRepo;
@@ -35,7 +36,7 @@ public class TransactionTests {
     private static String DEFAULT_SELLER = "John";
     private static String DEFAULT_BUYER = "George";
 
-    /**
+    /*
      * !IMPORTANT!
      * The configuration below (the annotations @MockBean, the @Autowired etc)
      * are what I resorted to using after many trial and error attempts with other configurations,
@@ -46,12 +47,12 @@ public class TransactionTests {
      */
     @MockBean
     TransactionRepo repository;
+    @MockBean
+    CustomerRepo repositoryy;
+
 
     @Autowired
     TransactionService transactionServiceTest;
-
-    @MockBean
-    CustomerRepo repositoryy;
     @Autowired
     CustomerService customerService;
 
@@ -93,7 +94,6 @@ public class TransactionTests {
         var r = transactionServiceTest.getById(tr.getId());
         verify(repository, atMost(0)).getReferenceById(any());
         assertEquals(r.getId(), tr.getId());
-
     }
 
     @Test
@@ -144,7 +144,7 @@ public class TransactionTests {
     }
 
     @Test
-    void testSeparateHandling() {
+    void testSeparateHandlingWithoutPreemptiveAddAndWithValuePool() {
         /*
             1. The DB has 1 transaction A
             2. Create 2 new transactions B,C and store them in the DB via the service.
@@ -161,7 +161,7 @@ public class TransactionTests {
 
 
         var result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran3.getId()));
-        verify(repository, times(1)).getById(any());
+        verify(repository, times(1)).getById(tran1.getId());
         assertTrue(result.size() == 3);
 
         var tran4 = getPendingTransaction();
@@ -169,7 +169,7 @@ public class TransactionTests {
 
         transactionServiceTest.deleteTransaction(tran3);
         result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran3.getId()));
-        verify(repository, times(2)).getById(any());
+        verify(repository, times(2)).getById(any()); //In separate-collection caches, if one less than expected was found, mnemosyne queries the underlying method for the objects one-by-one
         assertTrue(result.size() == 2);
         result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran4.getId()));
         verify(repository, times(2)).getById(any());
@@ -180,14 +180,80 @@ public class TransactionTests {
     }
 
     @Test
-    void compountKeyTest(){
+    void testSeparateHandlingWithoutPreemptiveAddAndWithUpdatesCache() {
+        /*
+            1. The DB has 1 transaction A
+            2. Create 2 new transactions B,C and store them in the DB via the service.
+            3. Call getTransactionByIds with the IDs of A,B,C.
+            4. The repository should have been called only once, with the ID of A.
+         */
+        var tran1 = getTransaction();
+        when(repository.getById(tran1.getId())).thenReturn(tran1);
+
+        var tran2 = getTransaction();
+        var tran3 = getPendingTransaction();
+        transactionServiceTest.saveTransactionWithUpdatesCache(tran2);
+        transactionServiceTest.saveTransactionWithUpdatesCache(tran3);
+
+
+        var result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran3.getId()));
+        verify(repository, times(1)).getById(tran1.getId());
+        assertTrue(result.size() == 3);
+
+        var tran4 = getPendingTransaction();
+        transactionServiceTest.saveTransactionWithUpdatesCache(tran4);
+
+        transactionServiceTest.deleteTransactionWithUpdatesCache(tran3);
+        result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran3.getId()));
+        verify(repository, times(2)).getById(any()); //In separate-collection caches, if one less than expected was found, mnemosyne queries the underlying method for the objects one-by-one
+        assertTrue(result.size() == 2);
+        result = transactionServiceTest.getTransactionByIds(Set.of(tran1.getId(), tran2.getId(), tran4.getId()));
+        verify(repository, times(2)).getById(any());
+        assertTrue(result.size() == 3);
+
+        assertTrue(transactionServiceTest.getById(tran3.getId()) == null);
 
     }
 
-    /*
 
-    TODO: test UpdatesValuePool
-    test compound key getTransactionsBySellerAndCompletion
+    @Test
+    void testFIFOFlow() {
+        var tran1 = getTransaction();
+        when(repository.getById(tran1.getId())).thenReturn(tran1);
+
+        var tran2 = getTransaction();
+        var tran3 = getPendingTransaction();
+        transactionServiceTest.saveTransactionWithUpdatesCache(tran1);
+        transactionServiceTest.saveTransactionWithUpdatesCache(tran2);
+        transactionServiceTest.saveTransactionWithUpdatesCache(tran3);
+        verify(repository, times(0)).getById(any());
+
+        var result = transactionServiceTest.getById(tran1.getId());
+        assert (result != null);
+        verify(repository, times(0)).getById(tran1.getId());
+        result = transactionServiceTest.getById(tran2.getId());
+        assert (result != null);
+        verify(repository, times(0)).getById(tran2.getId());
+        result = transactionServiceTest.getById(tran3.getId());
+        assert (result != null);
+        verify(repository, times(0)).getById(tran3.getId());
+
+        //TIME TO FIFO!!!
+        when(repository.getById(tran1.getId())).thenReturn(tran1);
+
+        var tran4 = getPendingTransaction();
+        transactionServiceTest.saveTransactionWithUpdatesCache(tran4);
+        result = transactionServiceTest.getById(tran1.getId());
+        assert (result != null); //TODO: Allakse to capacity se 5 kai ksanatrexto.
+        verify(repository, times(1)).getById(tran1.getId());
+
+
+    }
+
+
+
+    /*
+TODO    test compound key getTransactionsBySellerAndCompletion
      */
 
     @Test
