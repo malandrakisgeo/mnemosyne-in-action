@@ -8,8 +8,6 @@ import com.gmalandrakis.mnemosyne.demo.service.TransactionService;
 import com.gmalandrakis.mnemosyne.spring.MnemosyneSpringConf;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.mockito.invocation.Invocation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,22 +15,23 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.annotation.DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD;
 
-@SpringBootTest(classes = {MnemosyneSpringConf.class})
-@EnableAspectJAutoProxy
+//@SpringBootTest(classes = {MnemosyneSpringConf.class})
+@EnableAspectJAutoProxy()
 @EnableAutoConfiguration
 @ComponentScan("com.gmalandrakis")
 @DirtiesContext(classMode = BEFORE_EACH_TEST_METHOD)
-@ActiveProfiles("test")
-public class TransactionTests {
+public class TransactionTestsLRU {
     private static String DEFAULT_SELLER = "John";
     private static String DEFAULT_BUYER = "George";
 
@@ -69,8 +68,8 @@ public class TransactionTests {
         when(repository.getTransactionByCompleted(false)).thenReturn(availableTransactions);
         when(repository.save(any())).thenReturn(getPendingTransaction());
         var result = transactionServiceTest.getPendingTransactions();
-        assertEquals( 1, result.size());
-       // Mockito.mockingDetails(repository.getTransactionByCompleted(anyBoolean())).getInvocations().;
+        assert (result.size() == 1);
+
         verify(repository, atLeast(1)).getTransactionByCompleted(anyBoolean());
         verify(repository, atMost(1)).getTransactionByCompleted(anyBoolean());
 
@@ -111,7 +110,7 @@ public class TransactionTests {
         transactionServiceTest.saveTransaction(newTransaction);
 
         verify(repository, atLeast(1)).getTransactionBySellerid(any()); //Fetched preemptively by mnemosyne!
-        //verify(repository, atMost(1)).getTransactionBySellerid(any());
+        verify(repository, atMost(1)).getTransactionBySellerid(any());
 
         var result = transactionServiceTest.getTransactionsBySeller(DEFAULT_SELLER);
         verify(repository, atMost(1)).getTransactionBySellerid(any());  //Fetched from the cache -not the DB
@@ -217,7 +216,7 @@ public class TransactionTests {
 
 
     @Test
-    void testFIFOFlow() {
+    void testLRUFlow() {
         var tran1 = getTransaction();
         when(repository.getById(tran1.getId())).thenReturn(tran1);
 
@@ -270,7 +269,7 @@ TODO    test compound key getTransactionsBySellerAndCompletion
         var result = transactionServiceTest.getPendingTransactions();
         assert (result.size() == 2);
 
-        verify(repository, atLeast(1)).getTransactionByCompleted(anyBoolean()); //preemptive fetching.
+        verify(repository, times(1)).getTransactionByCompleted(anyBoolean()); //preemptive fetching.
 
         tran2.setCompleted(true);
         transactionServiceTest.saveTransaction(tran2);
